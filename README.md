@@ -330,7 +330,11 @@ final-project/
 ```
 
 ---
+## Demo Visualization
 
+| Login Screen | Dashboard | Book Browsing |
+|---|---|---|
+| ![](demo/log_in_screen.png) | ![](demo/dashboard.png) | ![](demo/book_browsing.png) |
 ## ⚙️ Installation & Setup
 
 ### Prerequisites
