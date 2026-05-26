@@ -14,7 +14,7 @@ function statusBadge(status, isOverdue, dueDate) {
   return <span className={`badge ${cls}`}><i className={icon} style={{ fontSize: "10px" }}></i>{label}</span>;
 }
 
-function ReturnModal({ id, onClose, onConfirm }) {
+function ReturnModal({ onClose, onConfirm, loading }) {
   return (
     <AnimatePresence>
       <motion.div className="modal-overlay" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose}>
@@ -38,8 +38,10 @@ function ReturnModal({ id, onClose, onConfirm }) {
             </p>
           </div>
           <div className="confirm-modal-footer">
-            <motion.button className="btn btn-ghost" onClick={onClose} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}>Cancel</motion.button>
-            <motion.button className="btn btn-primary" onClick={onConfirm} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}>Request Return</motion.button>
+            <motion.button className="btn btn-ghost" onClick={onClose} disabled={loading} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}>Cancel</motion.button>
+            <motion.button className="btn btn-primary" onClick={onConfirm} disabled={loading} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}>
+              {loading ? <i className="ti ti-loader" style={{ animation: "spin 1s linear infinite" }}></i> : "Request Return"}
+            </motion.button>
           </div>
         </motion.div>
       </motion.div>
@@ -52,15 +54,15 @@ export default function StudentHistoryPage() {
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState("active");
   const [returningId, setReturningId] = useState(null);
+  const [submittingReturn, setSubmittingReturn] = useState(false);
 
   useEffect(() => {
-    setLoading(true);
     const params = {};
     if (tab === "active") params.status = "active";
     if (tab === "returned") params.status = "returned";
 
     api.get("/api/borrows/my", { params }).then(({ data }) => {
-      setBorrows(data.data.borrows);
+      setBorrows(data.data?.borrows || []);
       setLoading(false);
     }).catch(() => {
       toast.error("Failed to load history");
@@ -73,6 +75,7 @@ export default function StudentHistoryPage() {
   const doReturn = async () => {
     const id = returningId;
     if (!id) return;
+    setSubmittingReturn(true);
     try {
       const { data } = await api.post(`/api/borrows/${id}/request-return`);
       if (data.success) {
@@ -83,6 +86,7 @@ export default function StudentHistoryPage() {
       toast.error(err.response?.data?.message || "Failed to request return");
     } finally {
       setReturningId(null);
+      setSubmittingReturn(false);
     }
   };
 
@@ -98,6 +102,7 @@ export default function StudentHistoryPage() {
             key={t}
             className={`tab${tab === t ? " active" : ""}`}
             onClick={() => setTab(t)}
+            disabled={loading}
           >{t === "active" ? "Active" : "History"}</button>
         ))}
       </div>
@@ -159,7 +164,7 @@ export default function StudentHistoryPage() {
       )}
 
       {returningId && (
-        <ReturnModal id={returningId} onClose={() => setReturningId(null)} onConfirm={doReturn} />
+        <ReturnModal onClose={() => { if (!submittingReturn) setReturningId(null); }} onConfirm={doReturn} loading={submittingReturn} />
       )}
     </motion.div>
   );

@@ -2,6 +2,7 @@ import prisma from "../src/config/db.js";
 import bcrypt from "bcrypt";
 import dotenv from "dotenv";
 import * as openLib from "../src/crawlers/openLibraryCrawler.js";
+import * as googleBooks from "../src/crawlers/googleBooksCrawler.js";
 import { delay } from "../src/crawlers/crawlerUtils.js";
 
 dotenv.config();
@@ -61,7 +62,7 @@ async function seedBooks() {
     // ── Education ──
     { title: "Pedagogy of the Oppressed", author: "Paulo Freire", isbn: "9780826412768", category: "Education", total_quantity: 2 },
     { title: "The Elements of Style", author: "Strunk & White", isbn: "9780205309023", category: "Education", total_quantity: 2 },
-    { title: "How to Win Friends and Influence People", author: "Dale Carnegie", isbn: "9780671027032", category: "Education", total_quantity: 3 },
+    { title: "Mindset", author: "Carol Dweck", isbn: "9780345472328", category: "Education", total_quantity: 3 },
     // ── Literature ──
     { title: "Pride and Prejudice", author: "Jane Austen", isbn: "9780141439518", category: "Literature", total_quantity: 3 },
     { title: "1984", author: "George Orwell", isbn: "9780451524935", category: "Literature", total_quantity: 3 },
@@ -97,15 +98,15 @@ async function seedBooks() {
     { title: "Moby-Dick", author: "Herman Melville", isbn: "9780142437247", category: "Literature", total_quantity: 2 },
     // ── Romance (supplement) ──
     { title: "The Fault in Our Stars", author: "John Green", isbn: "9780142424179", category: "Romance", total_quantity: 3 },
-    { title: "Me Before You", author: "Jojo Moyes", isbn: "9780143124542", category: "Romance", total_quantity: 2 },
+    { title: "The Hating Game", author: "Sally Thorne", isbn: "9780062439598", category: "Romance", total_quantity: 2 },
     { title: "The Time Traveler's Wife", author: "Audrey Niffenegger", isbn: "9780965818679", category: "Romance", total_quantity: 2 },
-    { title: "Red, White & Royal Blue", author: "Casey McQuiston", isbn: "9781250316776", category: "Romance", total_quantity: 2 },
+    { title: "It Ends With Us", author: "Colleen Hoover", isbn: "9781501110368", category: "Romance", total_quantity: 2 },
     // ── Science (supplement) ──
     { title: "The Gene", author: "Siddhartha Mukherjee", isbn: "9781476733524", category: "Science", total_quantity: 2 },
     { title: "The Immortal Life of Henrietta Lacks", author: "Rebecca Skloot", isbn: "9781400052189", category: "Science", total_quantity: 3 },
     { title: "Astrophysics for People in a Hurry", author: "Neil deGrasse Tyson", isbn: "9780393609394", category: "Science", total_quantity: 2 },
     // ── Technology (supplement) ──
-    { title: "The Phoenix Project", author: "Gene Kim", isbn: "9780988262591", category: "Technology", total_quantity: 2 },
+    { title: "The Lean Startup", author: "Eric Ries", isbn: "9780307887894", category: "Technology", total_quantity: 2 },
     { title: "Clean Architecture", author: "Robert C. Martin", isbn: "9780134494166", category: "Technology", total_quantity: 2 },
     { title: "Refactoring", author: "Martin Fowler", isbn: "9780134757599", category: "Technology", total_quantity: 2 },
     { title: "Site Reliability Engineering", author: "Beyer et al.", isbn: "9781491929124", category: "Technology", total_quantity: 2 },
@@ -127,10 +128,10 @@ async function seedBooks() {
     { title: "The Girl on the Train", author: "Paula Hawkins", isbn: "9781594634024", category: "Mystery / Thriller", total_quantity: 2 },
     { title: "The Hound of the Baskervilles", author: "Arthur Conan Doyle", isbn: "9780140437867", category: "Mystery / Thriller", total_quantity: 2 },
     // ── Self-development ──
-    { title: "Atomic Habits", author: "James Clear", isbn: "9780735211292", category: "Self-development", total_quantity: 4 },
+    { title: "Grit", author: "Angela Duckworth", isbn: "9781501111129", category: "Self-development", total_quantity: 4 },
     { title: "The 7 Habits of Highly Effective People", author: "Stephen Covey", isbn: "9781982137274", category: "Self-development", total_quantity: 3 },
     { title: "Think and Grow Rich", author: "Napoleon Hill", isbn: "9781585424337", category: "Self-development", total_quantity: 2 },
-    { title: "The Subtle Art of Not Giving a F*ck", author: "Mark Manson", isbn: "9780062457714", category: "Self-development", total_quantity: 3 },
+    { title: "The Power of Now", author: "Eckhart Tolle", isbn: "9781577314806", category: "Self-development", total_quantity: 3 },
     { title: "Awaken the Giant Within", author: "Tony Robbins", isbn: "9780671791544", category: "Self-development", total_quantity: 2 },
     { title: "Man's Search for Meaning", author: "Viktor Frankl", isbn: "9780807014295", category: "Self-development", total_quantity: 2 },
     // ── Fiction (supplement) ──
@@ -140,6 +141,41 @@ async function seedBooks() {
     { title: "The Design of Everyday Things", author: "Don Norman", isbn: "9780465050659", category: "Engineering", total_quantity: 2 },
     // ── Computer Science (supplement) ──
     { title: "The Clean Coder", author: "Robert C. Martin", isbn: "9780137081073", category: "Computer Science", total_quantity: 2 },
+    // ── AI / ML ──
+    { title: "Artificial Intelligence: A Modern Approach", author: "Stuart Russell & Peter Norvig", isbn: "9780134610993", category: "AI / ML", total_quantity: 3 },
+    { title: "Deep Learning", author: "Ian Goodfellow", isbn: "9780262035613", category: "AI / ML", total_quantity: 2 },
+    { title: "Pattern Recognition and Machine Learning", author: "Christopher Bishop", isbn: "9780387310732", category: "AI / ML", total_quantity: 2 },
+    // ── Networking ──
+    { title: "Data Communications and Networking", author: "Behrouz Forouzan", isbn: "9780073376226", category: "Networking", total_quantity: 3 },
+    { title: "TCP/IP Illustrated", author: "W. Richard Stevens", isbn: "9780321336316", category: "Networking", total_quantity: 2 },
+    { title: "Computer Networks", author: "Andrew S. Tanenbaum", isbn: "9780132126953", category: "Networking", total_quantity: 2 },
+    // ── Databases ──
+    { title: "Database Systems: The Complete Book", author: "Ullman et al.", isbn: "9780131873254", category: "Databases", total_quantity: 2 },
+    { title: "Designing Data-Intensive Applications", author: "Martin Kleppmann", isbn: "9781449373320", category: "Databases", total_quantity: 3 },
+    { title: "SQL in 10 Minutes", author: "Ben Forta", isbn: "9780135182796", category: "Databases", total_quantity: 3 },
+    // ── Software Engineering ──
+    { title: "Software Engineering", author: "Ian Sommerville", isbn: "9780133943030", category: "Software Engineering", total_quantity: 2 },
+    { title: "Head First Design Patterns", author: "Freeman & Robson", isbn: "9781492078005", category: "Software Engineering", total_quantity: 2 },
+    { title: "Working Effectively with Legacy Code", author: "Michael Feathers", isbn: "9780131177055", category: "Software Engineering", total_quantity: 2 },
+    // ── Mathematics ──
+    { title: "Calculus", author: "James Stewart", isbn: "9781285740621", category: "Mathematics", total_quantity: 3 },
+    { title: "Linear Algebra Done Right", author: "Sheldon Axler", isbn: "9783319110790", category: "Mathematics", total_quantity: 2 },
+    { title: "Discrete Mathematics", author: "Kenneth Rosen", isbn: "9781260091991", category: "Mathematics", total_quantity: 2 },
+    // ── English ──
+    { title: "On Writing Well", author: "William Zinsser", isbn: "9780060891541", category: "English", total_quantity: 2 },
+    { title: "Oxford Modern English Grammar", author: "Bas Aarts", isbn: "9780199658237", category: "English", total_quantity: 2 },
+    { title: "The Oxford Dictionary of English", author: "Angus Stevenson", isbn: "9780199571123", category: "English", total_quantity: 2 },
+    // ── UI / UX ──
+    { title: "Don't Make Me Think", author: "Steve Krug", isbn: "9780321965516", category: "UI / UX", total_quantity: 3 },
+    { title: "About Face: The Essentials of Interaction Design", author: "Alan Cooper", isbn: "9781118766576", category: "UI / UX", total_quantity: 2 },
+    { title: "Hooked: How to Build Habit-Forming Products", author: "Nir Eyal", isbn: "9781591847786", category: "UI / UX", total_quantity: 2 },
+    // ── Cybersecurity ──
+    { title: "The Web Application Hacker's Handbook", author: "Dafydd Stuttard", isbn: "9781118026472", category: "Cybersecurity", total_quantity: 2 },
+    { title: "Data and Goliath", author: "Bruce Schneier", isbn: "9780393352177", category: "Cybersecurity", total_quantity: 2 },
+    // ── Data Science ──
+    { title: "Python Data Science Handbook", author: "Jake VanderPlas", isbn: "9781098121228", category: "Data Science", total_quantity: 3 },
+    { title: "Storytelling with Data", author: "Cole Nussbaumer Knaflic", isbn: "9781119002253", category: "Data Science", total_quantity: 2 },
+    { title: "Naked Statistics", author: "Charles Wheelan", isbn: "9780393347777", category: "Data Science", total_quantity: 2 },
   ];
 
   for (const b of books) {
@@ -167,15 +203,21 @@ async function seedBooks() {
 }
 
 async function seedMetadata() {
-  const books = await prisma.book.findMany({ where: { is_deleted: false, metadata: null } });
+  const books = await prisma.book.findMany({
+    where: {
+      is_deleted: false,
+      OR: [
+        { metadata: null },
+        { metadata: { cover_image_url: null } },
+      ],
+    },
+  });
   if (books.length === 0) {
-    console.log("All books already have metadata — skipping");
+    console.log("All books already have covers — skipping");
     return;
   }
 
   for (const book of books) {
-    const coverUrl = `${OPEN_LIB_COVERS}/${book.isbn}-L.jpg`;
-
     let olData = null;
     try {
       olData = await openLib.fetchByIsbn(book.isbn);
@@ -187,32 +229,50 @@ async function seedMetadata() {
     const subjectsRaw = olData?.subjects || null;
     const subjectsSafe = subjectsRaw && subjectsRaw.length > 500 ? subjectsRaw.slice(0, 497) + "..." : subjectsRaw;
 
+    let coverUrl = olData?.cover_image_url || `https://covers.openlibrary.org/b/isbn/${book.isbn}-L.jpg`;
+    let coverSource = olData?.cover_image_url ? "Open Library" : null;
+    let meta = olData;
+
+    if (!coverSource) {
+      try {
+        const gbData = await googleBooks.fetchByIsbn(book.isbn);
+        if (gbData?.cover_image_url) {
+          coverUrl = gbData.cover_image_url;
+          coverSource = "Google Books";
+          meta = gbData;
+        }
+        await delay(350);
+      } catch {
+        console.log(`  [${book.isbn}] Google Books crawl failed`);
+      }
+    }
+
     await prisma.bookMetadata.upsert({
       where: { book_id: book.id },
       create: {
         book_id: book.id,
-        cover_image_url: olData?.cover_image_url || coverUrl,
-        description: olData?.description || null,
-        publisher: olData?.publisher || null,
-        publish_year: olData?.publish_year || null,
+        cover_image_url: coverUrl,
+        description: meta?.description || null,
+        publisher: meta?.publisher || null,
+        publish_year: meta?.publish_year || null,
         subjects: subjectsSafe,
-        page_count: olData?.page_count || null,
-        source_url: olData?.source_url || null,
+        page_count: meta?.page_count || null,
+        source_url: meta?.source_url || null,
         crawled_at: new Date(),
       },
       update: {
-        cover_image_url: olData?.cover_image_url || coverUrl,
-        description: olData?.description || null,
-        publisher: olData?.publisher || null,
-        publish_year: olData?.publish_year || null,
+        cover_image_url: coverUrl,
+        description: meta?.description || null,
+        publisher: meta?.publisher || null,
+        publish_year: meta?.publish_year || null,
         subjects: subjectsSafe,
-        page_count: olData?.page_count || null,
-        source_url: olData?.source_url || null,
+        page_count: meta?.page_count || null,
+        source_url: meta?.source_url || null,
         crawled_at: new Date(),
       },
     });
 
-    console.log(`  [${book.isbn}] ${book.title}: ${olData ? "enriched from Open Library" : "default cover URL set"}`);
+    console.log(`  [${book.isbn}] ${book.title}: ${coverSource || "client cascade (ISBN -L/-M, Google Books, fallback SVG)"}`);
   }
 
   console.log(`BookMetadata seeded for ${books.length} books`);

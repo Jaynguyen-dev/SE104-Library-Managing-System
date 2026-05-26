@@ -1,23 +1,50 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import gsap from "gsap";
 import toast from "react-hot-toast";
 import api from "../services/api";
+import { getCoverSources } from "../utils/coverUtils";
 
 export default function ReserveModal({ book, onClose, onReserved }) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [coverIdx, setCoverIdx] = useState(0);
   const cancelRef = useRef(null);
+  const overlayRef = useRef(null);
+  const modalRef = useRef(null);
+
+  const coverSources = getCoverSources(book);
+  const coverSrc = coverSources[coverIdx];
+
+  const handleCoverError = () => {
+    setCoverIdx(prev => Math.min(prev + 1, coverSources.length - 1));
+  };
+
+  const handleCoverLoad = (e) => {
+    const img = e.currentTarget;
+    if (img.naturalWidth <= 2 && img.naturalHeight <= 2) {
+      handleCoverError();
+    }
+  };
 
   useEffect(() => {
     const handleKey = (e) => { if (e.key === "Escape") onClose(); };
     document.addEventListener("keydown", handleKey);
     document.body.style.overflow = "hidden";
     cancelRef.current?.focus();
+    if (overlayRef.current && modalRef.current) {
+      gsap.set(overlayRef.current, { opacity: 0 });
+      gsap.set(modalRef.current, { opacity: 0, scale: 0.92, y: 20 });
+      gsap.to(overlayRef.current, { opacity: 1, duration: 0.25 });
+      gsap.to(modalRef.current, { opacity: 1, scale: 1, y: 0, duration: 0.35, ease: "power3.out" });
+    }
     return () => {
       document.removeEventListener("keydown", handleKey);
       document.body.style.overflow = "";
     };
   }, [onClose]);
+
+  if (!book) return null;
 
   const handleReserve = async () => {
     setSubmitting(true);
@@ -37,13 +64,10 @@ export default function ReserveModal({ book, onClose, onReserved }) {
     }
   };
 
-  const coverSrc = book.metadata?.cover_image_url
-    || (book.isbn && `https://covers.openlibrary.org/b/isbn/${book.isbn}-L.jpg`)
-    || "/default-cover.svg";
-
   return (
     <AnimatePresence>
       <motion.div
+        ref={overlayRef}
         className="modal-overlay"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -54,6 +78,7 @@ export default function ReserveModal({ book, onClose, onReserved }) {
         aria-label="Reserve book"
       >
         <motion.div
+          ref={modalRef}
           className="modal"
           initial={{ opacity: 0, scale: 0.95, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -89,7 +114,8 @@ export default function ReserveModal({ book, onClose, onReserved }) {
                 src={coverSrc}
                 alt={book.title}
                 className="borrow-modal-cover"
-                onError={(e) => { e.currentTarget.src = "/default-cover.svg"; }}
+                onError={handleCoverError}
+                onLoad={handleCoverLoad}
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.1 }}

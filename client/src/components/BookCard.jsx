@@ -1,20 +1,65 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
+import { getCoverSources, DEFAULT_COVER } from "../utils/coverUtils";
 
-const DEFAULT_COVER = "/default-cover.svg";
-const OPEN_LIB_COVERS = "https://covers.openlibrary.org/b/isbn";
+function CoverImage({ book }) {
+  const [loaded, setLoaded] = useState(false);
+  const [fallbackIdx, setFallbackIdx] = useState(0);
 
-export default function BookCard({ book, isStaff, onDelete, onBorrow, onReserve, userReservation }) {
-  const [useFallback, setUseFallback] = useState(0);
+  const coverSources = getCoverSources(book);
+  const currentSrc = coverSources[fallbackIdx];
+  const isDefault = currentSrc === DEFAULT_COVER;
 
-  const coverSources = [
-    book.metadata?.cover_image_url,
-    book.isbn && `${OPEN_LIB_COVERS}/${book.isbn}-L.jpg`,
-    DEFAULT_COVER,
-  ].filter(Boolean);
+  const advanceFallback = useCallback(() => {
+    setFallbackIdx(prev => Math.min(prev + 1, coverSources.length - 1));
+  }, [coverSources.length]);
 
-  const currentSrc = coverSources[useFallback] || DEFAULT_COVER;
+  const handleError = useCallback(() => {
+    advanceFallback();
+  }, [advanceFallback]);
+
+  const handleLoad = useCallback((e) => {
+    const img = e.currentTarget;
+    if (img.naturalWidth <= 2 && img.naturalHeight <= 2) {
+      advanceFallback();
+      return;
+    }
+    setLoaded(true);
+  }, [advanceFallback]);
+
+  return (
+    <div className="book-card-cover-wrap" style={{ position: "relative", overflow: "hidden" }}>
+      {!loaded && (
+        <div
+          style={{
+            position: "absolute", inset: 0,
+            background: "linear-gradient(135deg, #1e1e3a 25%, #1a1a30 50%, #141428 75%)",
+            backgroundSize: "200% 200%",
+            animation: "skeleton-pulse 1.5s ease-in-out infinite",
+          }}
+        />
+      )}
+      <img
+        src={currentSrc}
+        alt={`Cover of ${book.title}`}
+        className="book-card-cover"
+        onError={handleError}
+        onLoad={handleLoad}
+        loading="lazy"
+        style={{
+          width: "100%", height: "100%",
+          objectFit: isDefault ? "contain" : "cover",
+          opacity: loaded ? 1 : 0,
+          transition: "opacity 0.35s ease-in-out",
+        }}
+      />
+    </div>
+  );
+}
+
+export default function BookCard({ book, isStaff, onDelete, deleting, onBorrow, onReserve, userReservation }) {
+  if (!book || !book.id) return null;
 
   const isUnavailable = book.available_quantity === 0;
 
@@ -32,88 +77,9 @@ export default function BookCard({ book, isStaff, onDelete, onBorrow, onReserve,
     }
   };
 
-  return (
-    <motion.div
-      className="book-card"
-      style={{ cursor: onBorrow || onReserve ? "pointer" : "default" }}
-      whileHover={{ y: -6, boxShadow: "0 12px 40px rgba(0,0,0,0.5)" }}
-      transition={{ type: "spring", stiffness: 300, damping: 20 }}
-      onClick={isStaff ? undefined : handleCardClick}
-    >
-      {isStaff ? (
-        <Link
-          to={`/books/${book.id}/edit`}
-          style={{ textDecoration: "none", color: "inherit", display: "flex", flexDirection: "column", flex: 1 }}
-        >
-          <CardContent
-            book={book}
-            currentSrc={currentSrc}
-            useFallback={useFallback}
-            setUseFallback={setUseFallback}
-            coverSources={coverSources}
-            availabilityLabel={availabilityLabel}
-            availabilityClass={availabilityClass}
-            isStaff={isStaff}
-            onDelete={onDelete}
-          />
-        </Link>
-      ) : (
-        <div
-          style={{ textDecoration: "none", color: "inherit", display: "flex", flexDirection: "column", flex: 1 }}
-        >
-          <CardContent
-            book={book}
-            currentSrc={currentSrc}
-            useFallback={useFallback}
-            setUseFallback={setUseFallback}
-            coverSources={coverSources}
-            availabilityLabel={availabilityLabel}
-            availabilityClass={availabilityClass}
-            isStaff={isStaff}
-            onDelete={onDelete}
-            isUnavailable={isUnavailable}
-            userReservation={userReservation}
-            onReserve={onReserve}
-          />
-        </div>
-      )}
-    </motion.div>
-  );
-}
-
-function CardContent({ book, currentSrc, setUseFallback, coverSources, availabilityLabel, availabilityClass, isStaff, onDelete, isUnavailable, userReservation, onReserve }) {
-  return (
+  const cardContent = (
     <>
-      <div className="book-card-cover-wrap">
-        <motion.img
-          className="book-card-cover"
-          src={currentSrc}
-          alt={`Cover of ${book.title}`}
-          onError={() => setUseFallback((prev) => Math.min(prev + 1, coverSources.length - 1))}
-          onLoad={(e) => { if (currentSrc === "/default-cover.svg") e.currentTarget.style.objectFit = "contain"; }}
-          loading="lazy"
-          whileHover={{ scale: 1.1 }}
-          transition={{ duration: 0.4 }}
-        />
-        {userReservation && (
-          <motion.span
-            className={`reservation-badge ${userReservation.status === "notified" ? "badge-blue" : "badge-gray"}`}
-            initial={{ opacity: 0, x: -10 }}
-            animate={{ opacity: 1, x: 0 }}
-          >
-            {userReservation.status === "notified" ? "Available — Borrow Now" : `Reserved #${userReservation.queue_position || "?"}`}
-          </motion.span>
-        )}
-        {isUnavailable && !userReservation && (
-          <motion.span
-            className="reservation-badge badge-red"
-            initial={{ opacity: 0, x: -10 }}
-            animate={{ opacity: 1, x: 0 }}
-          >
-            Unavailable
-          </motion.span>
-        )}
-      </div>
+      <CoverImage book={book} />
       <div className="book-card-body">
         <div className="book-card-title" title={book.title}>
           {book.title}
@@ -137,15 +103,16 @@ function CardContent({ book, currentSrc, setUseFallback, coverSources, availabil
               </Link>
               <motion.button
                 className="icon-btn"
-                title="Delete"
-                whileHover={{ color: "#DC2626", borderColor: "#DC2626" }}
+                title={deleting ? "Deleting..." : "Delete"}
+                disabled={deleting}
+                whileHover={deleting ? undefined : { color: "#DC2626", borderColor: "#DC2626" }}
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  onDelete(book.id);
+                  if (!deleting) onDelete(book.id);
                 }}
               >
-                <i className="ti ti-trash"></i>
+                <i className={`ti ${deleting ? "ti-loader" : "ti-trash"}`} style={deleting ? { animation: "spin 1s linear infinite" } : undefined}></i>
               </motion.button>
             </div>
           )}
@@ -176,5 +143,28 @@ function CardContent({ book, currentSrc, setUseFallback, coverSources, availabil
         </div>
       </div>
     </>
+  );
+
+  return (
+    <motion.div
+      className="book-card"
+      style={{ cursor: onBorrow || onReserve ? "pointer" : "default" }}
+      whileHover={{ y: -6, boxShadow: "0 12px 40px rgba(0,0,0,0.5)" }}
+      transition={{ type: "spring", stiffness: 300, damping: 20 }}
+      onClick={isStaff ? undefined : handleCardClick}
+    >
+      {isStaff ? (
+        <Link
+          to={`/books/${book.id}/edit`}
+          style={{ textDecoration: "none", color: "inherit", display: "flex", flexDirection: "column", flex: 1 }}
+        >
+          {cardContent}
+        </Link>
+      ) : (
+        <div style={{ textDecoration: "none", color: "inherit", display: "flex", flexDirection: "column", flex: 1 }}>
+          {cardContent}
+        </div>
+      )}
+    </motion.div>
   );
 }

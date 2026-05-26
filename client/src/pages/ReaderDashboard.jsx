@@ -1,14 +1,47 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 import toast from "react-hot-toast";
 import { useAuth } from "../contexts/AuthContext";
 import api from "../services/api";
 import { formatCurrency, formatDate } from "../utils/format";
+import { getCoverSources, DEFAULT_COVER } from "../utils/coverUtils";
+
+gsap.registerPlugin(ScrollTrigger);
 
 const CATEGORY_COLORS = ["#1ed760", "#539df5", "#ffa42b", "#f3727f", "#a463f2", "#50e3c2", "#f7a8b8", "#4a90d9"];
 
 /* ─── Shared Sub-Components ─── */
+
+function RecentCover({ book }) {
+  const [index, setIndex] = useState(0);
+  const sources = getCoverSources(book);
+  const src = sources[index];
+
+  const handleError = useCallback(() => {
+    setIndex(prev => Math.min(prev + 1, sources.length - 1));
+  }, [sources.length]);
+
+  const handleLoad = useCallback((e) => {
+    const img = e.currentTarget;
+    if (img.naturalWidth <= 2 && img.naturalHeight <= 2) {
+      handleError();
+    }
+  }, [handleError]);
+
+  return (
+    <img
+      src={src}
+      alt=""
+      className="recent-book-cover"
+      style={{ objectFit: src === DEFAULT_COVER ? "contain" : "cover" }}
+      onLoad={handleLoad}
+      onError={handleError}
+    />
+  );
+}
 
 function StatCard({ label, value, sub, delay = 0, icon, gradient, color }) {
   return (
@@ -64,13 +97,14 @@ function InsightCard({ icon, label, value, sub, color, bg }) {
 function CategoryDonut({ data, size = 100 }) {
   const total = data.reduce((s, d) => s + d.count, 0);
   if (total === 0) return null;
-  let cumulative = 0;
-  const parts = data.map((d, i) => {
-    const start = (cumulative / total) * 100;
-    cumulative += d.count;
+  const { parts } = data.reduce((acc, d, i) => {
+    const start = (acc.cumulative / total) * 100;
+    const cumulative = acc.cumulative + d.count;
     const end = (cumulative / total) * 100;
-    return `${CATEGORY_COLORS[i % CATEGORY_COLORS.length]} ${start}% ${end}%`;
-  });
+    acc.parts.push(`${CATEGORY_COLORS[i % CATEGORY_COLORS.length]} ${start}% ${end}%`);
+    acc.cumulative = cumulative;
+    return acc;
+  }, { cumulative: 0, parts: [] });
   return (
     <div style={{
       width: size, height: size, borderRadius: "50%", flexShrink: 0,
@@ -122,6 +156,7 @@ function CategoryBar({ category, count, percentage, color, delay }) {
 export default function ReaderDashboard() {
   const { user } = useAuth();
   const [data, setData] = useState(null);
+  const dashRef = useRef(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -129,6 +164,24 @@ export default function ReaderDashboard() {
       .then(({ data }) => { setData(data.data); setLoading(false); })
       .catch(() => { toast.error("Failed to load dashboard"); setLoading(false); });
   }, []);
+
+  useEffect(() => {
+    if (!loading && data && dashRef.current) {
+      const ctx = gsap.context(() => {
+        gsap.fromTo(".stat-card", { opacity: 0, y: 20, scale: 0.97 },
+          { opacity: 1, y: 0, scale: 1, duration: 0.45, stagger: 0.05, ease: "power2.out" });
+        gsap.fromTo(".dash-col", { opacity: 0, y: 30 }, {
+          opacity: 1, y: 0, duration: 0.5,
+          scrollTrigger: { trigger: ".dash-col", start: "top 85%", toggleActions: "play none none reverse" },
+        });
+        gsap.fromTo(".section-header", { opacity: 0, y: 20 }, {
+          opacity: 1, y: 0, duration: 0.4,
+          scrollTrigger: { trigger: ".section-header", start: "top 88%", toggleActions: "play none none reverse" },
+        });
+      }, dashRef.current);
+      return () => ctx.kill();
+    }
+  }, [loading, data]);
 
   if (loading) {
     return (
@@ -166,7 +219,7 @@ export default function ReaderDashboard() {
   const hasUnpaidFines = data.unpaidFines && data.unpaidFines.length > 0;
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.2 }}>
+    <div ref={dashRef}>
 
       {/* ── Welcome Banner ── */}
       <Banner data={data} hasActivity={hasActivity} userName={user?.full_name} />
@@ -216,11 +269,7 @@ export default function ReaderDashboard() {
                   whileHover={{ y: -5 }}
                 >
                   <div className="recent-book-cover">
-                    {item.book.metadata?.cover_image_url ? (
-                      <img src={item.book.metadata.cover_image_url} alt="" className="recent-book-cover" style={{ objectFit: "cover" }} />
-                    ) : (
-                      <i className="ti ti-book"></i>
-                    )}
+                    <RecentCover book={item.book} />
                   </div>
                   <div className="recent-book-info">
                     <div className="recent-book-title">{item.book.title}</div>
@@ -401,13 +450,14 @@ export default function ReaderDashboard() {
         </motion.div>
       )}
 
-    </motion.div>
+    </div>
   );
 }
 
 /* ─── Banner ─── */
 
 function Banner({ data, hasActivity, userName }) {
+  const displayName = userName || "Reader";
   return (
     <motion.div
       initial={{ opacity: 0, y: 16 }}
@@ -427,7 +477,7 @@ function Banner({ data, hasActivity, userName }) {
           My Library
         </div>
         <div style={{ color: "#000", fontSize: 20, fontWeight: 700, letterSpacing: "-0.3px" }}>
-          {hasActivity ? `Welcome back, ${userName || "Reader"}!` : "Welcome to the Library"}
+          Welcome to the library, {displayName}
         </div>
         <div style={{ color: "rgba(0,0,0,0.6)", fontSize: 13, marginTop: 2 }}>
           {hasActivity

@@ -161,7 +161,7 @@ export default function UserListPage() {
         </motion.div>
       )}
 
-      <Pagination page={pagination.page || page} pages={pagination.pages} total={pagination.total} onPageChange={handlePageChange} />
+      <Pagination page={pagination.page || page} pages={pagination.pages} total={pagination.total} onPageChange={handlePageChange} loading={loading} />
     </motion.div>
   );
 }

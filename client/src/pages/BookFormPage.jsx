@@ -15,8 +15,8 @@ export default function BookFormPage() {
   useEffect(() => {
     if (isEdit) {
       api.get(`/api/books/${id}`).then(({ data }) => {
-        const b = data.data.book;
-        setForm({ title: b.title, author: b.author, isbn: b.isbn, category: b.category, total_quantity: b.total_quantity });
+        const b = data.data?.book || {};
+        setForm({ title: b.title || "", author: b.author || "", isbn: b.isbn || "", category: b.category || "", total_quantity: b.total_quantity || 1 });
       }).catch(() => {
         toast.error("Failed to load book");
         navigate("/books");

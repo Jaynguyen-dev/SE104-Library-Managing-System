@@ -5,8 +5,8 @@ import { authMiddleware } from "../middlewares/authMiddleware.js";
 import { registerValidation, loginValidation } from "../validators/authValidator.js";
 
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 100,
+  windowMs: parseInt(process.env.AUTH_RATE_LIMIT_WINDOW_MS, 10) || 15 * 60 * 1000,
+  max: parseInt(process.env.AUTH_RATE_LIMIT_MAX, 10) || 100,
   message: { success: false, message: "Too many requests, please try again later" },
   standardHeaders: true,
   legacyHeaders: false,

@@ -1,0 +1,64 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install client dependencies
+        run: |
+          cd client
+          npm ci
+
+      - name: Build client
+        run: |
+          cd client
+          npm run build
+        env:
+          VITE_API_URL: ""
+
+      - name: Install server dependencies
+        run: |
+          cd server
+          npm ci --omit=dev
+
+      - name: Generate Prisma client
+        run: |
+          cd server
+          npx prisma generate
+
+      - name: Deploy via rsync
+        uses: burnett01/rsync-deployments@7.0.1
+        with:
+          switches: -avzr --delete --exclude='.env' --exclude='node_modules' --exclude='logs'
+          path: .
+          remote_path: /home/deploy/library-lms
+          remote_host: ${{ secrets.DEPLOY_HOST }}
+          remote_user: ${{ secrets.DEPLOY_USER }}
+          remote_key: ${{ secrets.DEPLOY_KEY }}
+
+      - name: Install deps & restart
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_KEY }}
+          script: |
+            cd /home/deploy/library-lms/server
+            npm ci --omit=dev
+            npx prisma generate
+            npx prisma migrate deploy
+            cd ..
+            pm2 startOrRestart ecosystem.config.cjs --update-env
+            pm2 save

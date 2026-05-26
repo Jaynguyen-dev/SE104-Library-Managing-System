@@ -1,5 +1,7 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Link } from "react-router-dom";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 import toast from "react-hot-toast";
 import api from "../services/api";
 import { useAuth } from "../contexts/AuthContext";
@@ -7,6 +9,8 @@ import BookCard from "../components/BookCard";
 import BorrowModal from "../components/BorrowModal";
 import ReserveModal from "../components/ReserveModal";
 import Pagination from "../components/Pagination";
+
+gsap.registerPlugin(ScrollTrigger);
 
 function SkeletonGrid() {
   return (
@@ -26,7 +30,9 @@ function SkeletonGrid() {
 const CATEGORIES = [
   "All", "Fiction", "Literature", "Fantasy", "Romance",
   "Mystery / Thriller", "Science", "Technology", "Computer Science", "Engineering",
-  "Education", "History", "Self-development",
+  "Education", "History", "Self-development", "AI / ML", "Networking",
+  "Databases", "Software Engineering", "Mathematics", "English",
+  "UI / UX", "Cybersecurity", "Data Science",
 ];
 
 export default function BookListPage() {
@@ -38,11 +44,13 @@ export default function BookListPage() {
   const [search, setSearch] = useState("");
   const [searchInput, setSearchInput] = useState("");
   const [category, setCategory] = useState("All");
+  const [deletingId, setDeletingId] = useState(null);
   const [borrowingBook, setBorrowingBook] = useState(null);
   const [reservingBook, setReservingBook] = useState(null);
   const [userReservations, setUserReservations] = useState({});
   const { user } = useAuth();
   const isStaff = user?.role === "librarian";
+  const bookGridRef = useRef(null);
 
   const fetchBooks = (queryTab, queryPage, querySearch, queryCategory) => {
     const params = { page: queryPage || 1, limit: 20 };
@@ -65,6 +73,23 @@ export default function BookListPage() {
     fetchBooks(tab, 1, search, category);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab, search, category]);
+
+  useEffect(() => {
+    if (!loading && books.length > 0 && bookGridRef.current) {
+      const ctx = gsap.context(() => {
+        gsap.fromTo(".book-card", { opacity: 0, y: 24, scale: 0.97 }, {
+          opacity: 1, y: 0, scale: 1, duration: 0.45, stagger: 0.04, ease: "power3.out",
+          scrollTrigger: { trigger: ".book-grid", start: "top 88%", toggleActions: "play none none reverse" },
+        });
+
+        gsap.fromTo(".section-header", { opacity: 0, y: 20 }, {
+          opacity: 1, y: 0, duration: 0.4,
+          scrollTrigger: { trigger: ".section-header", start: "top 88%", toggleActions: "play none none reverse" },
+        });
+      }, bookGridRef.current);
+      return () => ctx.kill();
+    }
+  }, [loading, books]);
 
   useEffect(() => {
     if (user?.role === "user") {
@@ -111,12 +136,15 @@ export default function BookListPage() {
 
   const handleDelete = async (id) => {
     if (!confirm("Delete this book?")) return;
+    setDeletingId(id);
     try {
       await api.delete(`/api/books/${id}`);
       toast.success("Book deleted");
       handlePageChange(page);
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to delete book");
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -147,9 +175,9 @@ export default function BookListPage() {
     <div>
       <div className="section-header">
         <div className="tab-bar">
-          <button className={`tab${tab === "all" ? " active" : ""}`} onClick={() => handleTabChange("all")}>All Books</button>
-          <button className={`tab${tab === "available" ? " active" : ""}`} onClick={() => handleTabChange("available")}>Available</button>
-          <button className={`tab${tab === "borrowed" ? " active" : ""}`} onClick={() => handleTabChange("borrowed")}>Borrowed</button>
+          <button className={`tab${tab === "all" ? " active" : ""}`} onClick={() => handleTabChange("all")} disabled={loading}>All Books</button>
+          <button className={`tab${tab === "available" ? " active" : ""}`} onClick={() => handleTabChange("available")} disabled={loading}>Available</button>
+          <button className={`tab${tab === "borrowed" ? " active" : ""}`} onClick={() => handleTabChange("borrowed")} disabled={loading}>Borrowed</button>
         </div>
         {isStaff && (
           <Link to="/books/new" className="btn btn-primary">
@@ -196,10 +224,9 @@ export default function BookListPage() {
       </div>
 
       {/* ── Result Count ── */}
-      {!loading && books.length > 0 && (
+      {!loading && books.length > 0 && pagination.pages > 1 && (
         <div style={{ fontSize: 11, color: "var(--sf-text-2)", marginBottom: 8 }}>
-          Showing {books.length} of {pagination.total} book{pagination.total !== 1 ? "s" : ""}
-          {pagination.pages > 1 && ` · Page ${pagination.page || page} of ${pagination.pages}`}
+          Page {pagination.page || page} of {pagination.pages}
         </div>
       )}
 
@@ -211,20 +238,21 @@ export default function BookListPage() {
         </div>
       ) : (
         <>
-          <div className="book-grid">
+          <div className="book-grid" ref={bookGridRef}>
             {books.map((book) => (
-              <BookCard
-                key={book.id}
-                book={book}
-                isStaff={isStaff}
-                onDelete={handleDelete}
-                onBorrow={isStaff ? undefined : handleBorrow}
-                onReserve={isStaff ? undefined : handleReserve}
-                userReservation={userReservations[book.id] || null}
-              />
+                <BookCard
+                  key={book.id}
+                  book={book}
+                  isStaff={isStaff}
+                  onDelete={handleDelete}
+                  deleting={deletingId === book.id}
+                  onBorrow={isStaff ? undefined : handleBorrow}
+                  onReserve={isStaff ? undefined : handleReserve}
+                  userReservation={userReservations[book.id] || null}
+                />
             ))}
           </div>
-          <Pagination page={pagination.page || page} pages={pagination.pages} total={pagination.total} onPageChange={handlePageChange} />
+          <Pagination page={pagination.page || page} pages={pagination.pages} total={pagination.total} onPageChange={handlePageChange} loading={loading} />
 
           {borrowingBook && (
             <BorrowModal

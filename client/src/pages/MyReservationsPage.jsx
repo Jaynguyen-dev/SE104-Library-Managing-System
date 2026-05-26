@@ -45,30 +45,37 @@ function ExpirationCountdown({ expiresAt }) {
 export default function MyReservationsPage() {
   const [reservations, setReservations] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [cancellingId, setCancellingId] = useState(null);
 
-  const fetchReservations = () => {
-    setLoading(true);
+  useEffect(() => {
     api.get("/api/reservations/my").then(({ data }) => {
-      setReservations(data.data.reservations);
+      setReservations(data.data?.reservations || []);
       setLoading(false);
     }).catch(() => {
       toast.error("Failed to load reservations");
       setLoading(false);
     });
-  };
-
-  useEffect(() => {
-    fetchReservations();
   }, []);
+
+  const fetchReservations = () => {
+    api.get("/api/reservations/my").then(({ data }) => {
+      setReservations(data.data?.reservations || []);
+    }).catch(() => {
+      toast.error("Failed to load reservations");
+    });
+  };
 
   const handleCancel = async (id) => {
     if (!confirm("Cancel this reservation?")) return;
+    setCancellingId(id);
     try {
       await api.delete(`/api/reservations/${id}`);
       toast.success("Reservation cancelled");
       fetchReservations();
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to cancel");
+    } finally {
+      setCancellingId(null);
     }
   };
 
@@ -143,8 +150,12 @@ export default function MyReservationsPage() {
                         </td>
                         <td>
                           {["waiting", "notified"].includes(r.status) && (
-                            <motion.button className="btn btn-ghost btn-sm" onClick={() => handleCancel(r.id)} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}>
-                              <i className="ti ti-x" style={{ marginRight: "2px" }}></i>Cancel
+                            <motion.button className="btn btn-ghost btn-sm" onClick={() => handleCancel(r.id)} disabled={cancellingId === r.id} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}>
+                              {cancellingId === r.id ? (
+                                <i className="ti ti-loader" style={{ animation: "spin 1s linear infinite" }}></i>
+                              ) : (
+                                <i className="ti ti-x" style={{ marginRight: "2px" }}></i>
+                              )}{cancellingId === r.id ? "" : "Cancel"}
                             </motion.button>
                           )}
                         </td>

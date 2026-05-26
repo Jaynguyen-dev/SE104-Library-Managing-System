@@ -101,9 +101,10 @@ export default function FineListPage() {
     if (paidFilter !== "") params.is_paid = paidFilter;
     api.get(endpoint, { params })
       .then(({ data }) => {
-        setFines(data.data.fines);
-        setPagination(data.data.pagination || { total: 0, pages: 0 });
-        const unpaid = data.data.fines.filter((f) => !f.is_paid).reduce((s, f) => s + f.amount, 0);
+        const fines = data.data?.fines || [];
+        setFines(fines);
+        setPagination(data.data?.pagination || { total: 0, pages: 0 });
+        const unpaid = fines.filter((f) => !f.is_paid).reduce((s, f) => s + f.amount, 0);
         setTotalUnpaid(unpaid);
       })
       .catch((err) => toast.error(err.response?.data?.message || "Failed to load fines"))
@@ -177,7 +178,7 @@ export default function FineListPage() {
             <button
               key={v}
               className={`tab${paidFilter === v ? " active" : ""}`}
-              onClick={() => handlePaidFilter(v)}
+              onClick={() => handlePaidFilter(v)} disabled={loading}
             >{v === "" ? "All" : v === "false" ? "Unpaid" : "Paid"}</button>
           ))}
         </div>
@@ -262,7 +263,7 @@ export default function FineListPage() {
         </motion.div>
       )}
 
-      <Pagination page={pagination.page || page} pages={pagination.pages} total={pagination.total} onPageChange={handlePageChange} />
+      <Pagination page={pagination.page || page} pages={pagination.pages} total={pagination.total} onPageChange={handlePageChange} loading={loading} />
 
       {payingFine && (
         <PayModal fine={payingFine} onClose={() => setPayingFine(null)} onPaid={handlePaid} />

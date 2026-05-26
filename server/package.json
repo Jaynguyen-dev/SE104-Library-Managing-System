@@ -1,19 +1,28 @@
 {
   "name": "server",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Library Management System - Backend",
+  "main": "src/server.js",
   "scripts": {
     "dev": "nodemon src/server.js",
     "build": "npm --prefix ../client run build",
     "start": "node src/server.js",
+    "start:prod": "node src/server.js",
     "seed": "node prisma/seed.js",
+    "migrate": "npx prisma migrate deploy",
+    "migrate:dev": "npx prisma migrate dev",
+    "generate": "npx prisma generate",
+    "studio": "npx prisma studio",
     "test": "exit 0"
   },
   "prisma": {
     "seed": "node prisma/seed.js"
   },
-  "keywords": [],
+  "keywords": [
+    "library",
+    "management",
+    "lms"
+  ],
   "author": "",
   "license": "ISC",
   "type": "module",
@@ -21,11 +30,13 @@
     "@prisma/client": "^6.19.3",
     "axios": "^1.16.1",
     "bcrypt": "^6.0.0",
+    "compression": "^1.7.5",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "express-rate-limit": "^8.5.2",
     "express-validator": "^7.3.2",
+    "helmet": "^8.0.0",
     "jsonwebtoken": "^9.0.3",
     "node-cron": "^4.2.1",
     "prisma": "^6.19.3"

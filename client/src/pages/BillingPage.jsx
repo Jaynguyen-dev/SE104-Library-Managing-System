@@ -111,8 +111,8 @@ export default function BillingPage() {
     if (filter !== "") params.is_paid = filter;
     api.get("/api/fines", { params })
       .then(({ data }) => {
-        setFines(data.data.fines);
-        setPagination(data.data.pagination || { total: 0, pages: 0 });
+        setFines(data.data?.fines || []);
+        setPagination(data.data?.pagination || { total: 0, pages: 0 });
       })
       .catch((err) => toast.error(err.response?.data?.message || "Failed to load fines"))
       .finally(() => setLoading(false));
@@ -122,7 +122,18 @@ export default function BillingPage() {
       .catch(() => {});
   };
 
-  useEffect(() => { fetchData(1, ""); }, []);
+  useEffect(() => {
+    api.get("/api/fines", { params: { page: 1, limit: 20 } })
+      .then(({ data }) => {
+        setFines(data.data?.fines || []);
+        setPagination(data.data?.pagination || { total: 0, pages: 0 });
+      })
+      .catch((err) => toast.error(err.response?.data?.message || "Failed to load fines"))
+      .finally(() => setLoading(false));
+    api.get("/api/fines/revenue")
+      .then(({ data }) => setRevenue(data.data))
+      .catch(() => {});
+  }, []);
 
   const handleFilter = (filter) => {
     setPaidFilter(filter);
@@ -157,7 +168,7 @@ export default function BillingPage() {
           <button
             key={v}
             className={`tab${paidFilter === v ? " active" : ""}`}
-            onClick={() => handleFilter(v)}
+            onClick={() => handleFilter(v)} disabled={loading}
           >{v === "" ? "All" : v === "false" ? "Unpaid" : "Paid"}</button>
         ))}
       </div>
@@ -221,7 +232,7 @@ export default function BillingPage() {
         </motion.div>
       )}
 
-      <Pagination page={pagination.page || page} pages={pagination.pages} total={pagination.total} onPageChange={handlePageChange} />
+      <Pagination page={pagination.page || page} pages={pagination.pages} total={pagination.total} onPageChange={handlePageChange} loading={loading} />
 
       {payingFine && (
         <PayModal fine={payingFine} onClose={() => setPayingFine(null)} onPaid={handlePaid} />

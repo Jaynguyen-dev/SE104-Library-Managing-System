@@ -7,7 +7,7 @@ function LoadingSkeleton() {
     <div className="shell">
           <div className="sidebar" style={{ background: "var(--sf-sidebar)" }}>
         <div className="sidebar-logo">
-          <div className="sidebar-logo-icon"><i className="ti ti-book-2"></i></div>
+          <div className="sidebar-logo-icon"><img src="/logo.svg" alt="LibraryLMS" className="sidebar-logo-img" /></div>
           <span>LibraryLMS</span>
         </div>
         <div className="nav-section">

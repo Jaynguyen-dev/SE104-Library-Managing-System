@@ -52,12 +52,10 @@ export async function createBook(data) {
       },
     });
 
-    const coverUrl = `${OPEN_LIB_COVERS}/${data.isbn}-L.jpg`;
-
     await tx.bookMetadata.upsert({
       where: { book_id: book.id },
-      create: { book_id: book.id, cover_image_url: coverUrl },
-      update: { cover_image_url: coverUrl },
+      create: { book_id: book.id, cover_image_url: null },
+      update: { cover_image_url: null },
     });
 
     return tx.book.findUnique({

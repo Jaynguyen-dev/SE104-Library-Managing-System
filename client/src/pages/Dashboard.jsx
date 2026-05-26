@@ -1,10 +1,14 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 import toast from "react-hot-toast";
 import { useAuth } from "../contexts/AuthContext";
 import api from "../services/api";
 import { formatDate, formatCurrency } from "../utils/format";
+
+gsap.registerPlugin(ScrollTrigger);
 
 function StatCard({ label, value, sub, delay = 0, icon, gradient, color }) {
   return (
@@ -53,36 +57,43 @@ function InsightCard({ icon, label, value, sub, color, bg }) {
   );
 }
 
-function MiniBarChart({ data, color = "var(--sf-accent)" }) {
-  const maxVal = Math.max(...data.map(d => d.count), 1);
-  return (
-    <div className="monthly-chart">
-      {data.map((d, i) => (
-        <div key={d.month || i} className="chart-bar-wrap">
-          <motion.div
-            className="chart-bar-fill"
-            initial={{ height: 0 }}
-            animate={{ height: `${Math.max((d.count / maxVal) * 50, 4)}px` }}
-            transition={{ duration: 0.5, delay: i * 0.06, ease: "easeOut" }}
-            style={{ background: color }}
-          />
-          <div className="chart-bar-label">{d.month?.slice(-2) || d.label}</div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
 export default function Dashboard() {
   const { user } = useAuth();
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
+  const dashRef = useRef(null);
 
   useEffect(() => {
     api.get("/api/dashboard/summary")
       .then(({ data }) => { setSummary(data.data); setLoading(false); })
       .catch(() => { toast.error("Failed to load dashboard"); setLoading(false); });
   }, []);
+
+  useEffect(() => {
+    if (!loading && summary && dashRef.current) {
+      const ctx = gsap.context(() => {
+        gsap.fromTo(".stat-card", { opacity: 0, y: 20, scale: 0.97 },
+          { opacity: 1, y: 0, scale: 1, duration: 0.45, stagger: 0.05, ease: "power2.out" });
+        gsap.fromTo(".insight-card", { opacity: 0, y: 16 },
+          { opacity: 1, y: 0, duration: 0.4, stagger: 0.04, delay: 0.2, ease: "power2.out" });
+        gsap.fromTo(".pop-cat-card", { opacity: 0, y: 16 },
+          { opacity: 1, y: 0, duration: 0.4, stagger: 0.05, delay: 0.3, ease: "power2.out" });
+
+        gsap.fromTo(".dash-col", { opacity: 0, y: 30 }, {
+          opacity: 1, y: 0, duration: 0.5, ease: "power2.out",
+          scrollTrigger: { trigger: ".dash-col", start: "top 85%", toggleActions: "play none none reverse" },
+        });
+
+        gsap.fromTo(".section-header", { opacity: 0, y: 20 }, {
+          opacity: 1, y: 0, duration: 0.4,
+          scrollTrigger: { trigger: ".section-header", start: "top 88%", toggleActions: "play none none reverse" },
+        });
+      }, dashRef.current);
+      return () => ctx.kill();
+    }
+  }, [loading, summary]);
+
+  const displayName = user?.role === "librarian" ? "Librarian" : user?.full_name || "Admin";
 
   if (loading) {
     return (
@@ -118,7 +129,7 @@ export default function Dashboard() {
   ];
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.2 }}>
+    <div ref={dashRef}>
 
       {/* ── Welcome Banner ── */}
       <motion.div
@@ -139,7 +150,7 @@ export default function Dashboard() {
             Library Overview
           </div>
           <div style={{ color: "#000", fontSize: 22, fontWeight: 700, letterSpacing: "-0.3px" }}>
-            Welcome back, {user?.full_name || "Admin"}!
+            Welcome to the library, {displayName}
           </div>
           <div style={{ color: "rgba(0,0,0,0.6)", fontSize: 13, marginTop: 2 }}>
             {totalBooks} books · {totalUsers} members · {activeBorrows} active borrows
@@ -391,6 +402,6 @@ export default function Dashboard() {
           </div>
         </motion.div>
 
-    </motion.div>
+    </div>
   );
 }

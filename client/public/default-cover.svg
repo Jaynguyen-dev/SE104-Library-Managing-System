@@ -1,12 +1,37 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="300" height="400" viewBox="0 0 300 400">
-  <rect width="300" height="400" fill="#E8E8ED"/>
-  <rect x="24" y="24" width="252" height="352" rx="6" fill="#F5F5F7" stroke="#D1D1D6" stroke-width="1.5"/>
-  <g transform="translate(150,180)" fill="#C7C7CC" stroke="none">
-    <rect x="-40" y="-50" width="80" height="60" rx="4"/>
-    <rect x="-32" y="-42" width="30" height="44" rx="2" fill="#D8D8DD"/>
-    <rect x="2" y="-42" width="30" height="44" rx="2" fill="#D8D8DD"/>
-    <line x1="-20" y1="20" x2="20" y2="20" stroke="#C7C7CC" stroke-width="2"/>
-    <line x1="-20" y1="28" x2="12" y2="28" stroke="#C7C7CC" stroke-width="2"/>
-    <line x1="-20" y1="36" x2="16" y2="36" stroke="#C7C7CC" stroke-width="2"/>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#1e1e3a"/>
+      <stop offset="50%" stop-color="#1a1a30"/>
+      <stop offset="100%" stop-color="#141428"/>
+    </linearGradient>
+    <linearGradient id="book-body" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="rgba(255,255,255,0.07)"/>
+      <stop offset="100%" stop-color="rgba(255,255,255,0.02)"/>
+    </linearGradient>
+    <linearGradient id="spine" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="rgba(255,255,255,0.15)"/>
+      <stop offset="100%" stop-color="rgba(255,255,255,0.05)"/>
+    </linearGradient>
+  </defs>
+  <rect width="300" height="400" fill="url(#bg)" rx="6"/>
+  <rect x="65" y="70" width="170" height="260" rx="4" fill="url(#book-body)" stroke="rgba(255,255,255,0.08)" stroke-width="0.5"/>
+  <rect x="65" y="70" width="16" height="260" rx="2" fill="url(#spine)"/>
+  <circle cx="73" cy="100" r="2.5" fill="rgba(255,255,255,0.12)"/>
+  <line x1="96" y1="120" x2="218" y2="120" stroke="rgba(255,255,255,0.06)" stroke-width="0.8"/>
+  <line x1="96" y1="138" x2="218" y2="138" stroke="rgba(255,255,255,0.06)" stroke-width="0.8"/>
+  <line x1="96" y1="156" x2="218" y2="156" stroke="rgba(255,255,255,0.06)" stroke-width="0.8"/>
+  <line x1="96" y1="174" x2="200" y2="174" stroke="rgba(255,255,255,0.06)" stroke-width="0.8"/>
+  <line x1="96" y1="192" x2="218" y2="192" stroke="rgba(255,255,255,0.04)" stroke-width="0.8"/>
+  <line x1="96" y1="210" x2="210" y2="210" stroke="rgba(255,255,255,0.04)" stroke-width="0.8"/>
+  <line x1="96" y1="228" x2="218" y2="228" stroke="rgba(255,255,255,0.04)" stroke-width="0.8"/>
+  <line x1="96" y1="246" x2="195" y2="246" stroke="rgba(255,255,255,0.04)" stroke-width="0.8"/>
+  <line x1="96" y1="264" x2="218" y2="264" stroke="rgba(255,255,255,0.03)" stroke-width="0.8"/>
+  <line x1="96" y1="282" x2="205" y2="282" stroke="rgba(255,255,255,0.03)" stroke-width="0.8"/>
+  <line x1="96" y1="300" x2="218" y2="300" stroke="rgba(255,255,255,0.03)" stroke-width="0.8"/>
+  <g opacity="0.3">
+    <circle cx="73" cy="330" r="1.5" fill="rgba(255,255,255,0.08)"/>
+    <circle cx="85" cy="330" r="1.5" fill="rgba(255,255,255,0.08)"/>
+    <circle cx="97" cy="330" r="1.5" fill="rgba(255,255,255,0.08)"/>
   </g>
 </svg>

@@ -35,6 +35,7 @@ export default function WalletPage() {
   const [wallet, setWallet] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showAddCredits, setShowAddCredits] = useState(false);
+  const [payingId, setPayingId] = useState(null);
   const [fines, setFines] = useState([]);
 
   const fetchWallet = useCallback(() => {
@@ -62,6 +63,7 @@ export default function WalletPage() {
   const totalUnpaidFines = fines.filter((f) => !f.is_paid).reduce((s, f) => s + f.amount, 0);
 
   const handlePayFine = async (fineId) => {
+    setPayingId(fineId);
     try {
       await api.patch(`/api/fines/${fineId}/self-pay`);
       toast.success("Fine paid from wallet");
@@ -69,6 +71,8 @@ export default function WalletPage() {
       fetchFines();
     } catch (err) {
       toast.error(err.response?.data?.message || "Payment failed");
+    } finally {
+      setPayingId(null);
     }
   };
 
@@ -153,11 +157,13 @@ export default function WalletPage() {
                       <motion.button
                         className="btn btn-ghost btn-sm"
                         onClick={() => handlePayFine(f.id)}
-                        disabled={(wallet?.balance || 0) < f.amount}
+                        disabled={(wallet?.balance || 0) < f.amount || payingId === f.id}
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.97 }}
                       >
-                        {(wallet?.balance || 0) >= f.amount ? "Pay from Wallet" : "Insufficient"}
+                        {payingId === f.id ? (
+                          <i className="ti ti-loader" style={{ animation: "spin 1s linear infinite" }}></i>
+                        ) : (wallet?.balance || 0) >= f.amount ? "Pay from Wallet" : "Insufficient"}
                       </motion.button>
                     </td>
                   </tr>

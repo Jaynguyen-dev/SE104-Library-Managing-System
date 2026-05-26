@@ -57,7 +57,7 @@ export default function ReturnPage() {
         </div>
         <div className="form-row">
           <label className="form-label">Books</label>
-          <div style={{ fontSize: "14px" }}>{borrow.items?.map((i) => i.book?.title).join(", ")}</div>
+          <div style={{ fontSize: "14px" }}>{(borrow.items || []).map((i) => i.book?.title).filter(Boolean).join(", ")}</div>
         </div>
         <div className="form-row">
           <label className="form-label">Borrow Date</label>

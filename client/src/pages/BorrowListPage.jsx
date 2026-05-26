@@ -14,7 +14,7 @@ function statusBadge(status, isOverdue) {
   return <span className={`badge ${cls}`}><i className={icon} style={{ fontSize: "10px" }}></i>{label}</span>;
 }
 
-function ConfirmModal({ id, onClose, onConfirm, message, warning }) {
+function ConfirmModal({ onClose, onConfirm, message, warning, loading }) {
   return (
     <AnimatePresence>
       <motion.div
@@ -46,8 +46,10 @@ function ConfirmModal({ id, onClose, onConfirm, message, warning }) {
             </p>
           </div>
           <div className="confirm-modal-footer">
-            <motion.button className="btn btn-ghost" onClick={onClose} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}>Cancel</motion.button>
-            <motion.button className="btn btn-primary" onClick={onConfirm} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}>Confirm</motion.button>
+            <motion.button className="btn btn-ghost" onClick={onClose} disabled={loading} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}>Cancel</motion.button>
+            <motion.button className="btn btn-primary" onClick={onConfirm} disabled={loading} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}>
+              {loading ? <i className="ti ti-loader" style={{ animation: "spin 1s linear infinite" }}></i> : "Confirm"}
+            </motion.button>
           </div>
         </motion.div>
       </motion.div>
@@ -62,10 +64,16 @@ export default function BorrowListPage() {
   const [page, setPage] = useState(1);
   const [pagination, setPagination] = useState({ total: 0, pages: 0 });
   const [confirmingId, setConfirmingId] = useState(null);
+  const [confirmingReturn, setConfirmingReturn] = useState(false);
 
   useEffect(() => {
-    fetchData(statusFilter, 1);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    api.get("/api/borrows", { params: { page: 1, limit: 20 } })
+      .then(({ data }) => {
+        setBorrows(data.data?.borrows || []);
+        setPagination(data.data?.pagination || { total: 0, pages: 0 });
+      })
+      .catch((err) => toast.error(err.response?.data?.message || "Failed to load borrows"))
+      .finally(() => setLoading(false));
   }, []);
 
   const fetchData = (s, p) => {
@@ -74,8 +82,8 @@ export default function BorrowListPage() {
     if (s) params.status = s;
     api.get("/api/borrows", { params })
       .then(({ data }) => {
-        setBorrows(data.data.borrows);
-        setPagination(data.data.pagination || { total: 0, pages: 0 });
+        setBorrows(data.data?.borrows || []);
+        setPagination(data.data?.pagination || { total: 0, pages: 0 });
       })
       .catch((err) => toast.error(err.response?.data?.message || "Failed to load borrows"))
       .finally(() => setLoading(false));
@@ -95,6 +103,7 @@ export default function BorrowListPage() {
   const doConfirmReturn = async () => {
     const id = confirmingId;
     if (!id) return;
+    setConfirmingReturn(true);
     try {
       const { data } = await api.patch(`/api/borrows/${id}/confirm-return`);
       if (data.success) {
@@ -105,6 +114,7 @@ export default function BorrowListPage() {
       toast.error(err.response?.data?.message || "Failed to confirm return");
     } finally {
       setConfirmingId(null);
+      setConfirmingReturn(false);
     }
   };
 
@@ -121,6 +131,7 @@ export default function BorrowListPage() {
                 key={s}
                 className={`tab${statusFilter === s ? " active" : ""}`}
                 onClick={() => handleStatusFilter(s)}
+                disabled={loading}
               >{s === "return_pending" ? "Pending" : s || "All"}</button>
             ))}
           </div>
@@ -182,13 +193,15 @@ export default function BorrowListPage() {
         </motion.div>
       )}
 
-      <Pagination page={pagination.page || page} pages={pagination.pages} total={pagination.total} onPageChange={handlePageChange} />
+      <Pagination page={pagination.page || page} pages={pagination.pages} total={pagination.total} onPageChange={handlePageChange} loading={loading} />
 
       {confirmingId && (
         <ConfirmModal
-          id={confirmingId}
-          onClose={() => setConfirmingId(null)}
+          onClose={() => {
+            if (!confirmingReturn) setConfirmingId(null);
+          }}
           onConfirm={doConfirmReturn}
+          loading={confirmingReturn}
           warning={confirmingBorrow?.is_overdue ? "This borrow is overdue — a fine will be applied." : undefined}
         />
       )}

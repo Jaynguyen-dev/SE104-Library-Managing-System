@@ -1,6 +1,11 @@
+import { useRef, useEffect } from "react";
 import { Link, useNavigate, useLocation, Outlet } from "react-router-dom";
 import { motion } from "framer-motion";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useAuth } from "../contexts/AuthContext";
+
+gsap.registerPlugin(ScrollTrigger);
 
 const PAGE_TITLES = {
   "/dashboard": "Dashboard",
@@ -17,6 +22,7 @@ const PAGE_TITLES = {
   "/fines/my": "My Fines",
   "/profile/history": "My History",
   "/reservations": "My Reservations",
+  "/logs": "System Logs",
 };
 
 const ADMIN_NAV = [
@@ -32,7 +38,7 @@ const ADMIN_NAV = [
     { icon: "ti ti-receipt", label: "Fines", to: "/fines" },
     { icon: "ti ti-coin", label: "Billing", to: "/billing" },
   ]},
-];
+  ];
 
 const LIBRARIAN_NAV = [
   { section: "Overview", items: [
@@ -45,7 +51,7 @@ const LIBRARIAN_NAV = [
     { icon: "ti ti-arrow-left-right", label: "Borrows", to: "/borrows" },
     { icon: "ti ti-receipt", label: "Fines", to: "/fines" },
   ]},
-];
+  ];
 
 const READER_NAV = [
   { section: "Overview", items: [
@@ -74,8 +80,25 @@ function getAvatarClass(role) {
 }
 
 function NavItem({ item, isActive }) {
+  const itemRef = useRef(null);
+
+  useEffect(() => {
+    const el = itemRef.current;
+    if (!el) return;
+    const link = el.querySelector(".nav-item");
+    if (!link) return;
+    const enter = () => gsap.to(link, { x: 3, color: "#fff", duration: 0.2, ease: "power1.out" });
+    const leave = () => gsap.to(link, { x: 0, color: "", duration: 0.2, ease: "power1.out" });
+    el.addEventListener("mouseenter", enter);
+    el.addEventListener("mouseleave", leave);
+    return () => {
+      el.removeEventListener("mouseenter", enter);
+      el.removeEventListener("mouseleave", leave);
+    };
+  }, []);
+
   return (
-    <motion.div whileHover={{ x: 2 }} whileTap={{ scale: 0.98 }}>
+    <div ref={itemRef}>
       <Link
         to={item.to}
         className={`nav-item${isActive ? " active" : ""}`}
@@ -83,7 +106,7 @@ function NavItem({ item, isActive }) {
         <i className={item.icon} aria-hidden="true"></i>
         {item.label}
       </Link>
-    </motion.div>
+    </div>
   );
 }
 
@@ -91,11 +114,44 @@ export default function MainLayout() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const sidebarRef = useRef(null);
 
   const handleLogout = () => {
     logout();
     navigate("/login");
   };
+
+  useEffect(() => {
+    if (!sidebarRef.current) return;
+
+    const ctx = gsap.context(() => {
+      gsap.fromTo(".nav-item", { opacity: 0, x: -12 },
+        { opacity: 1, x: 0, duration: 0.35, stagger: 0.04, delay: 0.15, ease: "power2.out" });
+      gsap.to(".topbar-title", {
+        opacity: 0.6, duration: 0.3,
+        scrollTrigger: {
+          trigger: ".content", start: "top 40px", end: "top 100px",
+          scrub: 0.5, toggleActions: "play none none reverse",
+        },
+      });
+    }, sidebarRef.current);
+
+    const logoEls = sidebarRef.current.querySelectorAll(".sidebar-logo-icon");
+    const enterFn = (e) => { const el = e.currentTarget; gsap.to(el, { rotation: 6, scale: 1.06, duration: 0.25, ease: "power1.out" }); };
+    const leaveFn = (e) => { const el = e.currentTarget; gsap.to(el, { rotation: 0, scale: 1, duration: 0.25, ease: "power1.out" }); };
+    logoEls.forEach((el) => {
+      el.addEventListener("mouseenter", enterFn);
+      el.addEventListener("mouseleave", leaveFn);
+    });
+
+    return () => {
+      ctx.kill();
+      logoEls.forEach((el) => {
+        el.removeEventListener("mouseenter", enterFn);
+        el.removeEventListener("mouseleave", leaveFn);
+      });
+    };
+  }, []);
 
   const activePath = location.pathname;
   const topbarTitle = PAGE_TITLES[activePath] || "Dashboard";
@@ -106,6 +162,7 @@ export default function MainLayout() {
   return (
     <div className="shell">
       <motion.nav
+        ref={sidebarRef}
         className="sidebar"
         initial={{ x: -60, opacity: 0 }}
         animate={{ x: 0, opacity: 1 }}
@@ -114,9 +171,9 @@ export default function MainLayout() {
         <div className="sidebar-logo">
           <motion.div
             className="sidebar-logo-icon"
-            whileHover={{ rotate: 10, scale: 1.05 }}
+            whileHover={{ rotate: 8, scale: 1.06 }}
           >
-            <i className="ti ti-book-2" aria-hidden="true"></i>
+            <img src="/logo.svg" alt="LibraryLMS" className="sidebar-logo-img" />
           </motion.div>
           <span>LibraryLMS</span>
         </div>

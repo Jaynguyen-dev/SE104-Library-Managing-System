@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import gsap from "gsap";
 import toast from "react-hot-toast";
 import api from "../services/api";
 import { formatCurrency } from "../utils/format";
@@ -20,11 +21,19 @@ export default function AddCreditsModal({ onClose, onSuccess }) {
   const [method, setMethod] = useState("momo");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const overlayRef = useRef(null);
+  const modalRef = useRef(null);
 
   useEffect(() => {
     const handleKey = (e) => { if (e.key === "Escape") onClose(); };
     document.addEventListener("keydown", handleKey);
     document.body.style.overflow = "hidden";
+    if (overlayRef.current && modalRef.current) {
+      gsap.set(overlayRef.current, { opacity: 0 });
+      gsap.set(modalRef.current, { opacity: 0, scale: 0.92, y: 20 });
+      gsap.to(overlayRef.current, { opacity: 1, duration: 0.25 });
+      gsap.to(modalRef.current, { opacity: 1, scale: 1, y: 0, duration: 0.35, ease: "power3.out" });
+    }
     return () => {
       document.removeEventListener("keydown", handleKey);
       document.body.style.overflow = "";
@@ -62,6 +71,7 @@ export default function AddCreditsModal({ onClose, onSuccess }) {
   return (
     <AnimatePresence>
       <motion.div
+        ref={overlayRef}
         className="modal-overlay"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -72,6 +82,7 @@ export default function AddCreditsModal({ onClose, onSuccess }) {
         aria-label="Add credits"
       >
         <motion.div
+          ref={modalRef}
           className="modal"
           initial={{ opacity: 0, scale: 0.95, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}

@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 
-export default function Pagination({ page, pages, total, onPageChange }) {
+export default function Pagination({ page, pages, total, onPageChange, loading }) {
   if (pages <= 1) return null;
 
   return (
@@ -16,7 +16,7 @@ export default function Pagination({ page, pages, total, onPageChange }) {
       <div className="pagination-actions">
         <motion.button
           onClick={() => onPageChange(page - 1)}
-          disabled={page <= 1}
+          disabled={page <= 1 || loading}
           className="btn btn-ghost btn-sm"
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.97 }}
@@ -25,7 +25,7 @@ export default function Pagination({ page, pages, total, onPageChange }) {
         </motion.button>
         <motion.button
           onClick={() => onPageChange(page + 1)}
-          disabled={page >= pages}
+          disabled={page >= pages || loading}
           className="btn btn-ghost btn-sm"
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.97 }}

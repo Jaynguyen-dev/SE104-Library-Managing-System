@@ -218,29 +218,37 @@ async function autoDeductFines() {
   }
 }
 
+async function safeRun(fn, name) {
+  try {
+    await fn();
+  } catch (err) {
+    console.error(`[Scheduler] ${name} failed:`, err.message);
+  }
+}
+
 export function startScheduler() {
-  sendReminders();
-  processOverdueFines();
-  reservationService.processExpiredReservations();
+  safeRun(sendReminders, "initial reminders");
+  safeRun(processOverdueFines, "initial overdue");
+  safeRun(reservationService.processExpiredReservations, "initial reservations");
 
   cron.schedule("0 8 * * *", () => {
     console.log("[Scheduler] Running due-date reminder check...");
-    sendReminders().catch((err) => console.error("[Scheduler] Reminder error:", err.message));
+    safeRun(sendReminders, "reminders");
   });
 
   cron.schedule("0 0 * * *", () => {
     console.log("[Scheduler] Running overdue fine check...");
-    processOverdueFines().catch((err) => console.error("[Scheduler] Overdue error:", err.message));
+    safeRun(processOverdueFines, "overdue");
   });
 
   cron.schedule("30 2 * * *", () => {
     console.log("[Scheduler] Running auto-deduction check...");
-    autoDeductFines().catch((err) => console.error("[Scheduler] Auto-deduct error:", err.message));
+    safeRun(autoDeductFines, "auto-deduct");
   });
 
   cron.schedule("*/30 * * * *", () => {
     console.log("[Scheduler] Running reservation expiration check...");
-    reservationService.processExpiredReservations().catch((err) => console.error("[Scheduler] Reservation expiration error:", err.message));
+    safeRun(reservationService.processExpiredReservations, "reservation expiration");
   });
 
   console.log("[Scheduler] Started — reminders (8:00), overdue (0:00), auto-deduct (2:30), reservations (every 30m)");

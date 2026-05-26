@@ -1,7 +1,11 @@
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
 import { AnimatePresence, motion } from "framer-motion";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { AuthProvider } from "./contexts/AuthContext";
+
+gsap.registerPlugin(ScrollTrigger);
 import ErrorBoundary from "./components/ErrorBoundary";
 import ProtectedRoute from "./components/ProtectedRoute";
 import MainLayout from "./layouts/MainLayout";
@@ -21,6 +25,8 @@ import BillingPage from "./pages/BillingPage";
 import WalletPage from "./pages/WalletPage";
 import StudentHistoryPage from "./pages/StudentHistoryPage";
 import MyReservationsPage from "./pages/MyReservationsPage";
+import LandingPage from "./pages/LandingPage";
+import LogViewerPage from "./pages/LogViewerPage";
 
 function AnimatedOutlet({ children }) {
   const location = useLocation();
@@ -40,7 +46,6 @@ function AnimatedOutlet({ children }) {
 }
 
 function ToastContent() {
-  const location = useLocation();
   return (
     <Toaster
       position="top-right"
@@ -93,7 +98,8 @@ function AppRoutes() {
         <Route path="/wallet" element={<ProtectedRoute roles={["user"]}><AnimatedOutlet><WalletPage /></AnimatedOutlet></ProtectedRoute>} />
         <Route path="/profile/history" element={<ProtectedRoute roles={["user"]}><AnimatedOutlet><StudentHistoryPage /></AnimatedOutlet></ProtectedRoute>} />
         <Route path="/reservations" element={<ProtectedRoute roles={["user"]}><AnimatedOutlet><MyReservationsPage /></AnimatedOutlet></ProtectedRoute>} />
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        <Route path="/logs" element={<ProtectedRoute roles={["librarian"]}><AnimatedOutlet><LogViewerPage /></AnimatedOutlet></ProtectedRoute>} />
+        <Route path="/" element={<LandingPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>
