@@ -74,9 +74,11 @@ export async function updateBook(id, data) {
     if (dup) throw Object.assign(new Error("ISBN already exists"), { statusCode: 400 });
   }
 
+  const { available_quantity, ...safeData } = data;
+
   return prisma.book.update({
     where: { id },
-    data,
+    data: safeData,
     include: { metadata: true },
   });
 }

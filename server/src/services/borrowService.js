@@ -1,4 +1,5 @@
 import prisma from "../config/db.js";
+import { Prisma } from "@prisma/client";
 import { calculateFine } from "../utils/fineCalculator.js";
 import { paginate } from "../utils/paginate.js";
 import * as reservationService from "./reservationService.js";
@@ -33,18 +34,26 @@ export async function createBorrow(userId, items) {
   for (const item of items) {
     const book = books.find((b) => b.id === item.book_id);
     if (!book) throw Object.assign(new Error(`Book id ${item.book_id} not found`), { statusCode: 400 });
-    if (book.available_quantity < (item.quantity || 1)) {
-      throw Object.assign(new Error(`"${book.title}" is not available`), { statusCode: 400 });
-    }
-    if (book.reserved_for_user_id && book.reserved_for_user_id !== userId) {
-      throw Object.assign(new Error(`"${book.title}" is reserved for another user`), { statusCode: 400 });
-    }
   }
 
   const dueDate = new Date();
   dueDate.setDate(dueDate.getDate() + 30);
 
   return prisma.$transaction(async (tx) => {
+    const txnBooks = await tx.book.findMany({
+      where: { id: { in: bookIds }, is_deleted: false },
+    });
+
+    for (const item of items) {
+      const book = txnBooks.find((b) => b.id === item.book_id);
+      if (book.available_quantity < (item.quantity || 1)) {
+        throw Object.assign(new Error(`"${book.title}" is not available`), { statusCode: 400 });
+      }
+      if (book.reserved_for_user_id && book.reserved_for_user_id !== userId) {
+        throw Object.assign(new Error(`"${book.title}" is reserved for another user`), { statusCode: 400 });
+      }
+    }
+
     const borrow = await tx.borrowRecord.create({
       data: {
         user_id: userId,
@@ -58,7 +67,7 @@ export async function createBorrow(userId, items) {
     });
 
     for (const item of items) {
-      const book = books.find((b) => b.id === item.book_id);
+      const book = txnBooks.find((b) => b.id === item.book_id);
       await tx.book.update({
         where: { id: item.book_id },
         data: {
@@ -82,7 +91,7 @@ export async function createBorrow(userId, items) {
     }
 
     return borrow;
-  });
+  }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
 }
 
 export async function listBorrows(status, page, limit) {
@@ -213,7 +222,7 @@ export async function confirmReturn(borrowId, librarianId) {
         },
       });
     }
-  });
+  }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
 
   return prisma.borrowRecord.findUnique({
     where: { id: borrowId },
